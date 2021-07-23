@@ -1,10 +1,10 @@
 'use strict'
-var isBuffer = require('is-buffer')
 
 const {
     getSpeakerStream, 
     generateNoiseStream, 
-    createWSAudioStream
+    createWSAudioStream,
+    writeWSMsgIntoSpeaker
 } = require('./audioutils.js')
 
 /* 
@@ -81,14 +81,7 @@ const route = (app, express) => {
             console.log('socket message', {msg})
             // logger.info('web socket msg', {msg})
             // audioStream.push(msg)
-            if(isBuffer(msg)){
-                try {
-                    speaker.write(msg);        
-                 }
-                 catch (e) {
-                     console.log("Speaker Error: ", e)
-                 }
-            }
+            writeWSMsgIntoSpeaker(speaker, msg)
             // setTimeout(() => {
             //     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
             // }, 500); 

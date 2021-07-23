@@ -5,6 +5,9 @@ const baudio = require('baudio');
 
 const {Readable} = require('stream')
 
+const isBuffer = require('is-buffer')
+
+
 const generateNoiseStream = () => {
     var n = 0;
     return baudio(function (t) {
@@ -36,12 +39,22 @@ const createWSAudioStream = () => {
     
 }
 
-
+const writeWSMsgIntoSpeaker = (speaker, msg) => {
+    if(isBuffer(msg)){
+        try {
+            speaker.write(msg);        
+         }
+         catch (e) {
+             console.log("Speaker Error: ", e)
+         }
+    }
+}
 
 
 
 module.exports = {
     getSpeakerStream,
     generateNoiseStream,
-    createWSAudioStream
+    createWSAudioStream,
+    writeWSMsgIntoSpeaker
 }
