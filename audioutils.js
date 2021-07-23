@@ -1,4 +1,5 @@
 var mic = require('mic');
+
 const Speaker = require('speaker');
 
 const baudio = require('baudio');
@@ -6,6 +7,10 @@ const baudio = require('baudio');
 const {Readable} = require('stream')
 
 const isBuffer = require('is-buffer')
+
+const chunkingStreams = require('chunking-streams');
+var SizeChunker = chunkingStreams.SizeChunker;
+
 
 
 const generateNoiseStream = () => {
@@ -28,7 +33,7 @@ const getSpeakerStream = () => {
 }
 
 
-
+// TODO: this is not working, just an idea
 const createWSAudioStream = () => {
     const readable = new Readable()
     
@@ -51,10 +56,59 @@ const writeWSMsgIntoSpeaker = (speaker, msg) => {
 }
 
 
+const startStreamMicAudioIntoWebSocket = (ws) => {
+    
+    var micInstance = mic({
+        rate: '16000',
+        channels: 1
+    });
+
+    var chunker = new SizeChunker({
+        chunkSize: 640 // must be a number greater than zero. 
+    });
+    
+    var micInputStream = micInstance.getAudioStream();
+    micInputStream.pipe(chunker);
+    micInstance.start();
+
+
+    // speaker.start()//??
+    chunker.on('data', function(chunk) {
+        const data = chunk.data;
+        var buf;
+        if (data.length == 640){
+            console.log(Date.now(), " Sending: ", data.length, " Bytes")
+            try {
+               ws.send(data);
+            }
+            catch (e) {
+            console.log("Send Error: ", e)
+            };
+        }
+        else{
+            console.log(Date.now(), " Buffering: ", data.length, " Bytes");
+            buf += data;
+            if (buf.length == 640){
+                console.log(Date.now(), " Sending: ", data.length, " Bytes")
+                try {
+                   ws.send(data);
+                }
+                catch (e) {
+                console.log("Send Error: ", e)
+                };
+                buf = null;
+            }
+        }
+    });
+
+
+
+}
 
 module.exports = {
     getSpeakerStream,
     generateNoiseStream,
     createWSAudioStream,
-    writeWSMsgIntoSpeaker
+    writeWSMsgIntoSpeaker,
+    startStreamMicAudioIntoWebSocket
 }

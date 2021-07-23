@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "baudio": "^2.1.4",
+    "chunking-streams": "0.0.8",
     "conversation-api-function": "0.0.15",
     "express-ws": "^5.0.2",
     "is-buffer": "^2.0.5",

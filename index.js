@@ -4,11 +4,12 @@ const {
     getSpeakerStream, 
     generateNoiseStream, 
     createWSAudioStream,
-    writeWSMsgIntoSpeaker
+    writeWSMsgIntoSpeaker,
+    startStreamMicAudioIntoWebSocket
 } = require('./audioutils.js')
 
 /* 
-    phone example: https://github.com/sammachin/puckcall
+    phone example: https://gixthub.com/sammachin/puckcall
     websocket audio example: https://www.nexmo.com/legacy-blog/2016/12/19/streaming-calls-to-a-browser-with-voice-websockets-dr
 */
 const DATACENTER = `https://api.nexmo.com`
@@ -73,15 +74,15 @@ const route = (app, express) => {
         } = req.nexmo;
         logger.info('web socket start /socket')
         
-        // const audioStream = createWSAudioStream()
-        // audioStream.pipe(speaker)
+        startStreamMicAudioIntoWebSocket(ws)
+
 
         ws.on('message', (msg) => {
             
             console.log('socket message', {msg})
-            // logger.info('web socket msg', {msg})
-            // audioStream.push(msg)
+            
             writeWSMsgIntoSpeaker(speaker, msg)
+
             // setTimeout(() => {
             //     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
             // }, 500); 
