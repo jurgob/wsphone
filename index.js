@@ -14,6 +14,30 @@ const {
 */
 const DATACENTER = `https://api.nexmo.com`
 
+function getDomain(url){
+    const domain = url.split('://')[1]
+    return domain;
+}
+
+function generateInitialNCCO(){
+    const ncco = [
+        {
+            "action": "talk",
+            "text": "You are listening to a Call made with Voice API"
+        },
+        {
+            "action": "talk",
+            "text": "Wendy sono a home, sweet home"
+        },
+        {
+            "action": "talk",
+            "text": "Sta scena e' cosi dolce che sembra una sweet come"
+        }
+    ]
+
+    return ncco
+}
+
 
 const voiceEvent = async (req, res, next) => {
     const { logger } = req.nexmo;
@@ -26,31 +50,47 @@ const voiceEvent = async (req, res, next) => {
 }
 
 const voiceAnswer = async (req, res, next) => {
-    const { logger ,config} = req.nexmo;
-    logger.info("voiceAnswer req", { req_body: req.body, wss_url: `wss://${req.hostname}/socket`});
-    try {
-        const ncco = [
-            {
-                "action": "connect",
-                "endpoint": [{
-                    "type": "websocket",
-                    "uri": `wss://${req.hostname}/socket`,
-                    "content-type": "audio/l16;rate=16000",
-                    "headers":{}
-                }]
-            }
-        ]
-        logger.info('ncco ', {ncco: JSON.stringify(ncco, null, ' ')})
+    
+    const {
+        logger,
+        config
+    } = req.nexmo;
 
-        return res.json(ncco);
+    const number2call = req.body.from
 
-    } catch (err) {
-        logger.error("Error on voiceAnswer function");
-    }
+    const ncco = generateInitialNCCO()
+    
+    logger.info({body: JSON.stringify(req.body, null, '  '), ncco}, '== voiceAnswer request')
+    
+    res.json(ncco)
 }
 
+// const voiceAnswer = async (req, res, next) => {
+//     const { logger ,config} = req.nexmo;
+//     logger.info("voiceAnswer req", { req_body: req.body, wss_url: `wss://${req.hostname}/socket`});
+//     try {
+//         const ncco = [
+//             {
+//                 "action": "connect",
+//                 "endpoint": [{
+//                     "type": "websocket",
+//                     "uri": `wss://${req.hostname}/socket`,
+//                     "content-type": "audio/l16;rate=16000",
+//                     "headers":{}
+//                 }]
+//             }
+//         ]
+//         logger.info('ncco ', {ncco: JSON.stringify(ncco, null, ' ')})
+
+//         return res.json(ncco);
+
+//     } catch (err) {
+//         logger.error("Error on voiceAnswer function");
+//     }
+// }
+
 const route = (app, express) => {
-    console.log('route startup!')
+    
     const expressWs = require('express-ws')(app);
     const WebSocket = require('ws');
     
@@ -90,23 +130,21 @@ const route = (app, express) => {
     });
 
 
-    app.get('/startcall', async (req, res, next) => {
+    app.get('/calls', async (req, res, next) => {
         const {
             logger,
             csClient,
             config
         } = req.nexmo;
 
-        logger.info(`Hello start call`)
-
-        const callReq = await csClient({
+        const startCallRequest = {
             "url":`${DATACENTER}/v1/calls`,
             "method": "post",
             data:{
                 "to": [
                     {
                         "type": "websocket",
-                        "uri": "ws://example.com/socket",
+                        "uri": `wss://${getDomain(config.server_url)}/socket`,
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
                             "app": "audiosocket"
@@ -115,11 +153,18 @@ const route = (app, express) => {
                 ],
                 "random_from_number": true,
                 "event_url": [`${config.server_url}/webhook/voiceAnswer`],
-                "answer_url": [`${config.server_url}/webhook/voiceAnswer`]
+                "answer_url": [`${config.server_url}/webhook/voiceAnswer`],
+                "answer_method": "POST",
+                "event_method": "POST"
             }
-        }).catch(err => {
+        }
+
+        logger.info({ startCallRequest }, `start a call`)
+
+        const callReq = await csClient(startCallRequest).catch(err => {
             logger.info(`Call request error`, err)
-            
+            // const data = err
+
             res.json({
                 msg: "Hello start call error!",
                 callInfo: err.response.data

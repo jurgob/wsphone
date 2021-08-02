@@ -50,7 +50,7 @@ const writeWSMsgIntoSpeaker = (speaker, msg) => {
             speaker.write(msg);        
          }
          catch (e) {
-             console.log("Speaker Error: ", e)
+            
          }
     }
 }
@@ -77,24 +77,19 @@ const startStreamMicAudioIntoWebSocket = (ws) => {
         const data = chunk.data;
         var buf;
         if (data.length == 640){
-            console.log(Date.now(), " Sending: ", data.length, " Bytes")
             try {
                ws.send(data);
             }
             catch (e) {
-            console.log("Send Error: ", e)
             };
         }
         else{
-            console.log(Date.now(), " Buffering: ", data.length, " Bytes");
             buf += data;
             if (buf.length == 640){
-                console.log(Date.now(), " Sending: ", data.length, " Bytes")
                 try {
                    ws.send(data);
                 }
                 catch (e) {
-                console.log("Send Error: ", e)
                 };
                 buf = null;
             }
